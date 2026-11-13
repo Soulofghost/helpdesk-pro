@@ -1,0 +1,257 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>HelpDesk Pro | Enterprise ITSM & SLA Incident Management</title>
+  <link rel="stylesheet" href="style.css">
+  <link rel="preconnect" href="https://fonts.googleapis.com">
+  <link rel="preconnect" href="https://fonts.gstatic.com" crossorigin>
+  <link href="https://fonts.googleapis.com/css2?family=Plus+Jakarta+Sans:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500;600&display=swap" rel="stylesheet">
+</head>
+<body>
+  <div class="app-container">
+    <!-- Sidebar -->
+    <aside class="sidebar">
+      <div class="brand">
+        <div class="brand-icon">
+          <svg width="22" height="22" viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2">
+            <rect x="2" y="3" width="20" height="14" rx="2" ry="2"/>
+            <line x1="8" y1="21" x2="16" y2="21"/>
+            <line x1="12" y1="17" x2="12" y2="21"/>
+          </svg>
+        </div>
+        <div class="brand-meta">
+          <h2>HelpDesk Pro</h2>
+          <span class="badge-noc">NOC / ITSM TIER 1-3</span>
+        </div>
+      </div>
+
+      <nav class="nav-menu">
+        <button class="nav-btn active" data-view="queue">
+          <span class="icon">⚡</span> Incident Queue
+        </button>
+        <button class="nav-btn" data-view="metrics">
+          <span class="icon">📊</span> SLA Compliance
+        </button>
+      </nav>
+
+      <!-- SLA Policy Matrix Card -->
+      <div class="policy-card">
+        <h4>SLA Policy Matrix</h4>
+        <div class="policy-item">
+          <span class="prio-tag prio-critical">CRITICAL</span>
+          <span>1h Resp / 4h Res</span>
+        </div>
+        <div class="policy-item">
+          <span class="prio-tag prio-high">HIGH</span>
+          <span>2h Resp / 8h Res</span>
+        </div>
+        <div class="policy-item">
+          <span class="prio-tag prio-medium">MEDIUM</span>
+          <span>4h Resp / 24h Res</span>
+        </div>
+        <div class="policy-item">
+          <span class="prio-tag prio-low">LOW</span>
+          <span>8h Resp / 72h Res</span>
+        </div>
+      </div>
+
+      <div class="system-status">
+        <span class="pulse-dot"></span>
+        <span>Escalation Daemon Online</span>
+      </div>
+    </aside>
+
+    <!-- Main Console -->
+    <main class="main-content">
+      <!-- Topbar -->
+      <header class="topbar">
+        <div class="topbar-title">
+          <h1 id="viewTitle">Incident Queue</h1>
+          <p id="viewSubtitle">Enterprise ticket lifecycle routing, priority escalations, and SLA countdowns</p>
+        </div>
+        <div class="topbar-actions">
+          <button class="btn btn-secondary" id="refreshBtn">↻ Refresh</button>
+          <button class="btn btn-primary" id="openNewTicketModal">+ Log Incident</button>
+        </div>
+      </header>
+
+      <!-- KPI Bar -->
+      <section class="kpi-row">
+        <div class="kpi-box">
+          <span class="kpi-label">Active Incidents</span>
+          <span class="kpi-num" id="kpiActive">0</span>
+          <span class="kpi-sub">In queue or triage</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">SLA Compliance</span>
+          <span class="kpi-num text-emerald" id="kpiCompliance">100%</span>
+          <span class="kpi-sub">Target: &ge; 95.0%</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">SLA Breaches</span>
+          <span class="kpi-num text-crimson" id="kpiBreaches">0</span>
+          <span class="kpi-sub">Exceeded threshold</span>
+        </div>
+        <div class="kpi-box">
+          <span class="kpi-label">Resolved Total</span>
+          <span class="kpi-num text-indigo" id="kpiResolved">0</span>
+          <span class="kpi-sub">Closed successfully</span>
+        </div>
+      </section>
+
+      <!-- View 1: Incident Queue -->
+      <section class="view-panel active" id="viewQueue">
+        <div class="filter-strip">
+          <input type="text" id="searchTickets" placeholder="Search ticket #, title, or requester...">
+          <div class="filter-controls">
+            <select id="filterPriority">
+              <option value="">All Priorities</option>
+              <option value="CRITICAL">Critical</option>
+              <option value="HIGH">High</option>
+              <option value="MEDIUM">Medium</option>
+              <option value="LOW">Low</option>
+            </select>
+            <select id="filterStatus">
+              <option value="">All Statuses</option>
+              <option value="OPEN">Open</option>
+              <option value="ASSIGNED">Assigned</option>
+              <option value="IN_PROGRESS">In Progress</option>
+              <option value="PENDING_CUSTOMER">Pending Customer</option>
+              <option value="RESOLVED">Resolved</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="console-split">
+          <!-- Ticket Table -->
+          <div class="queue-table-wrap">
+            <table class="itsm-table">
+              <thead>
+                <tr>
+                  <th>Ticket</th>
+                  <th>Title & Category</th>
+                  <th>Priority</th>
+                  <th>Status</th>
+                  <th>Assigned Agent</th>
+                  <th>SLA Countdown</th>
+                </tr>
+              </thead>
+              <tbody id="ticketListBody">
+                <tr><td colspan="6" class="text-center text-muted">Loading incident tickets...</td></tr>
+              </tbody>
+            </table>
+          </div>
+
+          <!-- Ticket Inspector Sidebar Pane -->
+          <div class="inspector-pane" id="inspectorPane">
+            <div class="inspector-placeholder" id="inspectorPlaceholder">
+              <span>Select a ticket from the queue to inspect SLA timers, events, and timeline comments.</span>
+            </div>
+            <div class="inspector-content" id="inspectorContent" style="display: none;">
+              <!-- Dynamic content -->
+            </div>
+          </div>
+        </div>
+      </section>
+
+      <!-- View 2: SLA Compliance Metrics -->
+      <section class="view-panel" id="viewMetrics">
+        <div class="metrics-grid">
+          <div class="metric-card">
+            <h3>Incidents by Priority</h3>
+            <div id="priorityBars" class="metric-chart"></div>
+          </div>
+          <div class="metric-card">
+            <h3>Incidents by Department / Category</h3>
+            <div id="categoryBars" class="metric-chart"></div>
+          </div>
+        </div>
+      </section>
+    </main>
+  </div>
+
+  <!-- Modal: Log Incident -->
+  <div class="modal-overlay" id="newTicketModal">
+    <div class="modal-dialog">
+      <div class="modal-head">
+        <h3>Log IT Incident / Service Request</h3>
+        <button class="btn-close" id="closeTicketModal">&times;</button>
+      </div>
+      <form id="newTicketForm">
+        <div class="field">
+          <label>Incident Summary / Title *</label>
+          <input type="text" id="tickTitle" required placeholder="e.g. Production Redis Cluster Eviction Spike">
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Category *</label>
+            <select id="tickCategory" required>
+              <option value="Security & IAM">Security & IAM</option>
+              <option value="Network & Infrastructure">Network & Infrastructure</option>
+              <option value="Software & Applications" selected>Software & Applications</option>
+              <option value="Hardware & Devices">Hardware & Devices</option>
+              <option value="General & Access">General & Access</option>
+            </select>
+          </div>
+          <div class="field">
+            <label>Priority Severity *</label>
+            <select id="tickPriority" required>
+              <option value="CRITICAL">Critical (P1 - 4h SLA)</option>
+              <option value="HIGH">High (P2 - 8h SLA)</option>
+              <option value="MEDIUM" selected>Medium (P3 - 24h SLA)</option>
+              <option value="LOW">Low (P4 - 72h SLA)</option>
+            </select>
+          </div>
+        </div>
+
+        <div class="field-row">
+          <div class="field">
+            <label>Requester Name *</label>
+            <input type="text" id="tickReqName" required placeholder="e.g. SRE Platform Lead">
+          </div>
+          <div class="field">
+            <label>Requester Email *</label>
+            <input type="email" id="tickReqEmail" required placeholder="sre@enterprise.internal">
+          </div>
+        </div>
+
+        <div class="field">
+          <label>Incident Description & Diagnostic Details *</label>
+          <textarea id="tickDescription" rows="3" required placeholder="Describe error symptoms, affected hosts, client impact..."></textarea>
+        </div>
+
+        <div class="modal-foot">
+          <button type="button" class="btn btn-secondary" id="cancelTicketModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Dispatch Incident</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <!-- Modal: Resolve Ticket -->
+  <div class="modal-overlay" id="resolveTicketModal">
+    <div class="modal-dialog">
+      <div class="modal-head">
+        <h3>Resolve Incident</h3>
+        <button class="btn-close" id="closeResolveModal">&times;</button>
+      </div>
+      <form id="resolveTicketForm">
+        <input type="hidden" id="resolveTicketId">
+        <div class="field">
+          <label>Root-Cause Diagnosis & Corrective Actions *</label>
+          <textarea id="resolveRootCause" rows="4" required placeholder="Detail the technical root cause and remediation steps taken to resolve the incident..."></textarea>
+        </div>
+        <div class="modal-foot">
+          <button type="button" class="btn btn-secondary" id="cancelResolveModal">Cancel</button>
+          <button type="submit" class="btn btn-primary">Confirm Resolution</button>
+        </div>
+      </form>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
